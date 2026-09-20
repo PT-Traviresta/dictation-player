@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dictation Player</title>
+<style>
+
+/* ── Reset & Base ──────────────────────────────────────── */
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{
+    font-family:"Yu Gothic","Hiragino Sans","Noto Sans JP","Segoe UI",sans-serif;
+    /*background:linear-gradient(160deg,#0d0d1a 0%,#1a1a2e 50%,#16213e 100%);*/
+    background:linear-gradient(160deg, #c3c3d1 0%, #d2d2d9 50%, #ffffff 100%);
+    color:#e0e0e0;
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    overflow:hidden;
+}
+
+/* ── Header ────────────────────────────────────────────── */
+
+header{
+    flex-shrink:0;
+    background:rgba(12,12,24,0.88);
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+    border-bottom:1px solid rgba(255,255,255,0.06);
+    padding:10px 20px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+
+.header-row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+}
+
+.header-row+.header-row{
+    border-top:1px solid rgba(255,255,255,0.04);
+    padding-top:8px;
+}
+
+/* ── File Labels ───────────────────────────────────────── */
+
+.file-label{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    padding:5px 10px;
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:8px;
+    font-size:13px;
+    color:#888;
+    cursor:pointer;
+    transition:all .2s;
+}
+
+.file-label:hover{
+    background:rgba(255,255,255,0.08);
+    color:#bbb;
+    border-color:rgba(255,255,255,0.15);
+}
+
+.file-label input[type="file"]{display:none}
+
+.file-name{
+    color:#aaa;
+    max-width:130px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size:12px;
+}
+
+/* ── Audio ─────────────────────────────────────────────── */
+
+audio{
+    width:280px;
+    height:34px;
+    border-radius:8px;
+    color-scheme:dark;
+}
+
+#status{
+    margin-left:auto;
+    font-size:12px;
+    color:#555;
+    white-space:nowrap;
+}
+
+/* ── Mode Selector ─────────────────────────────────────── */
+
+.mode-group{
+    display:inline-flex;
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:8px;
+    overflow:hidden;
+}
+
+.mode-btn{
+    padding:5px 14px;
+    border:none;
+    background:transparent;
+    color:#777;
+    cursor:pointer;
+    font-size:13px;
+    font-weight:500;
+    transition:all .25s;
+    white-space:nowrap;
+}
+
+.mode-btn:hover{
+    color:#ccc;
+    background:rgba(255,255,255,0.05);
+}
+
+.mode-btn.active{
+    background:linear-gradient(135deg,#ffd54f,#ffb300);
+    color:#1a1a2e;
+    font-weight:700;
+}
+
+/* ── Control Buttons ───────────────────────────────────── */
+
+.ctrl-btn{
+    padding:5px 14px;
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:8px;
+    color:#ccc;
+    cursor:pointer;
+    font-size:13px;
+    font-weight:500;
+    transition:all .2s;
+    white-space:nowrap;
+}
+
+.ctrl-btn:hover{
+    background:rgba(255,255,255,0.12);
+    color:#fff;
+}
+
+.ctrl-label{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    font-size:13px;
+    color:#888;
+}
+
+select{
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:6px;
+    color:#ccc;
+    padding:4px 8px;
+    font-size:13px;
+    cursor:pointer;
+}
+
+#search{
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:8px;
+    color:#e0e0e0;
+    padding:5px 10px;
+    font-size:13px;
+    outline:none;
+    width:140px;
+    transition:border-color .2s;
+}
+
+#search:focus{
+    border-color:rgba(255,213,79,0.5);
+}
+
+.shortcuts-hint{
+    font-size:16px;
+    cursor:help;
+    opacity:.4;
+    transition:opacity .2s;
+}
+
+.shortcuts-hint:hover{opacity:.8}
+
+/* ── Transcript Area ───────────────────────────────────── */
+
+#transcript{
+    flex:1;
+    overflow-y:auto;
+    padding:12px 20px 80px;
+}
+
+#transcript::-webkit-scrollbar{width:5px}
+#transcript::-webkit-scrollbar-track{background:transparent}
+#transcript::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
+#transcript::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.2)}
+
+/* ── Sentence Row ──────────────────────────────────────── */
+
+.sentence-row{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    padding:8px 14px;
+    margin:3px 0;
+    border-radius:10px;
+    border-left:3px solid transparent;
+    transition:all .3s ease;
+}
+
+.sentence-row:hover{
+    background:rgba(255,255,255,0.02);
+}
+
+.sentence-row.active{
+    border-left-color:#ffd54f;
+    background:rgba(255,213,79,0.03);
+    box-shadow:inset 0 0 30px rgba(255,213,79,0.015);
+}
+
+/* ── Sentence Number ───────────────────────────────────── */
+
+.sentence-num{
+    min-width:26px;
+    height:26px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:11px;
+    font-weight:600;
+    color:#444;
+    border-radius:50%;
+    cursor:pointer;
+    transition:all .2s;
+    flex-shrink:0;
+    margin-top:6px;
+}
+
+.sentence-num:hover{
+    background:rgba(255,213,79,0.12);
+    color:#ffd54f;
+    transform:scale(1.1);
+}
+
+.sentence-row.active .sentence-num{
+    color:#ffd54f;
+}
+
+.sentence-content{
+    flex:1;
+    min-width:0;
+}
+
+/* ── Ground Truth Line ─────────────────────────────────── */
+
+.sentence-gt{
+    font-size:22px;
+    line-height:2;
+    transition:filter .35s ease;
+}
+
+.sentence-gt.masked{
+    filter:blur(8px);
+    user-select:none;
+    pointer-events:none;
+}
+
+/* ── Word Spans ────────────────────────────────────────── */
+
+.word{
+    padding:2px 4px;
+    border-radius:5px;
+    cursor:pointer;
+    transition:all .15s;
+}
+
+.word:hover{
+    background:rgba(255,255,255,0.1);
+}
+
+.current{
+    background:linear-gradient(135deg,#ffd54f,#ffca28);
+    color:#1a1a2e;
+    font-weight:600;
+    border-radius:5px;
+    box-shadow:0 0 12px rgba(255,213,79,0.25);
+}
+
+.match{
+    outline:2px solid #00bcd4;
+    outline-offset:2px;
+    border-radius:4px;
+}
+
+/* ── User Input (Dictation) ────────────────────────────── */
+
+.sentence-input{
+    margin-top:4px;
+}
+
+.sentence-input textarea{
+    width:100%;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:8px;
+    color:#e0e0e0;
+    font-family:inherit;
+    font-size:20px;
+    line-height:1.8;
+    padding:6px 12px;
+    resize:none;
+    outline:none;
+    overflow:hidden;
+    transition:border-color .2s, background .2s;
+}
+
+.sentence-input textarea:focus{
+    border-color:rgba(255,213,79,0.4);
+    background:rgba(255,255,255,0.05);
+}
+
+/* ── Reveal Button ─────────────────────────────────────── */
+
+.reveal-btn{
+    align-self:flex-start;
+    margin-top:6px;
+    padding:5px 8px;
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:8px;
+    color:#555;
+    cursor:pointer;
+    font-size:15px;
+    transition:all .25s;
+    flex-shrink:0;
+}
+
+.reveal-btn:hover{
+    background:rgba(255,213,79,0.1);
+    color:#ffd54f;
+    border-color:rgba(255,213,79,0.3);
+}
+
+.reveal-btn.revealed{
+    background:rgba(255,213,79,0.15);
+    color:#ffd54f;
+    border-color:rgba(255,213,79,0.4);
+}
+
+/* ── Drop Overlay ──────────────────────────────────────── */
+
+#dropOverlay{
+    position:fixed;
+    inset:0;
+    background:rgba(10,10,30,0.88);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:1000;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .3s;
+}
+
+#dropOverlay.visible{
+    opacity:1;
+    pointer-events:auto;
+}
+
+.drop-message{
+    text-align:center;
+    font-size:22px;
+    font-weight:600;
+    color:#ffd54f;
+    border:3px dashed rgba(255,213,79,0.35);
+    border-radius:20px;
+    padding:50px 70px;
+    pointer-events:none;
+}
+
+.drop-message small{
+    display:block;
+    margin-top:8px;
+    font-size:13px;
+    font-weight:400;
+    color:#888;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- ── Header ──────────────────────────────────────────── -->
+
+<header>
+
+<div class="header-row">
+    <label class="file-label">
+        🎵 Audio
+        <input type="file" id="audioFile" accept="audio/*">
+        <span class="file-name" id="audioFileName">Choose file</span>
+    </label>
+    <label class="file-label">
+        📄 JSON
+        <input type="file" id="jsonFile" accept=".json">
+        <span class="file-name" id="jsonFileName">Choose file</span>
+    </label>
+    <label class="file-label">
+        📝 Script
+        <input type="file" id="transcriptFile" accept=".txt">
+        <span class="file-name" id="scriptFileName">Choose file</span>
+    </label>
+    <audio id="audio" controls></audio>
+    <span id="status">No transcript loaded</span>
+</div>
+
+<div class="header-row">
+    <div class="mode-group">
+        <button class="mode-btn active" data-mode="normal">▶ Normal</button>
+        <button class="mode-btn" data-mode="sentence-repeat">🔁 Repeat</button>
+        <button class="mode-btn" data-mode="dictation">🎧 Dictation</button>
+    </div>
+    <button id="playBtn" class="ctrl-btn">▶ Play</button>
+    <label class="ctrl-label">Speed
+        <select id="speed">
+            <option>0.5</option>
+            <option>0.75</option>
+            <option selected>1</option>
+            <option>1.25</option>
+            <option>1.5</option>
+            <option>2</option>
+        </select>
+    </label>
+    <input id="search" placeholder="🔍 Search...">
+    <button id="revealAllBtn" class="ctrl-btn" style="display:none">Reveal All</button>
+    <button id="resetBtn" class="ctrl-btn" style="display:none">🗑 Reset</button>
+    <span class="shortcuts-hint"
+          title="Space : Play / Pause&#10;← / → : Prev / Next word&#10;Ctrl+↑ / ↓ : Prev / Next sentence&#10;Ctrl+← : Replay sentence from start&#10;Esc : Exit text field&#10;Enter : Finish &amp; reveal sentence">⌨️</span>
+</div>
+
+</header>
+
+<!-- ── Transcript ──────────────────────────────────────── -->
+
+<div id="transcript"></div>
+
+<!-- ── Drop Overlay ────────────────────────────────────── -->
+
+<div id="dropOverlay">
+    <div class="drop-message">
+        Drop files here
+        <small>Audio · JSON · Script (.txt)</small>
+    </div>
+</div>
+
+<!-- ── Script ──────────────────────────────────────────── -->
+
+<script>
+
+/* ═══════════════════════════════════════════════════════
+   Elements
+   ═══════════════════════════════════════════════════════ */
+
+const audio        = document.getElementById("audio");
+const transcriptEl = document.getElementById("transcript");
+const playBtn      = document.getElementById("playBtn");
+const speedEl      = document.getElementById("speed");
+const searchEl     = document.getElementById("search");
+const statusEl     = document.getElementById("status");
+const revealAllBtn = document.getElementById("revealAllBtn");
+const resetBtn     = document.getElementById("resetBtn");
+
+/* ═══════════════════════════════════════════════════════
+   State
+   ═══════════════════════════════════════════════════════ */
+
+let words            = [];   // ASR word objects {text, start_time, end_time}
+let spans            = [];   // DOM <span> for each matched word
+let sentences        = [];   // sentence objects (see renderTranscript)
+let currentWordIdx   = -1;   // highlighted word index
+let activeSentenceIdx= -1;   // active sentence (for repeat loop target)
+let mode             = "normal";  // "normal" | "sentence-repeat" | "dictation"
+let transcriptText   = "";
+
+audio.loop = true;  // default for Normal mode
+
+/* ═══════════════════════════════════════════════════════
+   File Loading
+   ═══════════════════════════════════════════════════════ */
+
+document.getElementById("audioFile").onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    audio.src = URL.createObjectURL(file);
+    document.getElementById("audioFileName").textContent = file.name;
+};
+
+document.getElementById("jsonFile").onchange = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    words = JSON.parse(await file.text());
+    document.getElementById("jsonFileName").textContent = file.name;
+    if (transcriptText) renderTranscript();
+    statusEl.textContent = `${words.length} words`;
+};
+
+document.getElementById("transcriptFile").onchange = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    transcriptText = await file.text();
+    document.getElementById("scriptFileName").textContent = file.name;
+    if (words.length) renderTranscript();
+};
+
+/* ═══════════════════════════════════════════════════════
+   Drag & Drop
+   ═══════════════════════════════════════════════════════ */
+
+const dropOverlay = document.getElementById("dropOverlay");
+let dragCounter = 0;
+
+document.addEventListener("dragenter", e => {
+    e.preventDefault();
+    dragCounter++;
+    dropOverlay.classList.add("visible");
+});
+
+document.addEventListener("dragleave", e => {
+    e.preventDefault();
+    dragCounter--;
+    if (dragCounter <= 0) {
+        dragCounter = 0;
+        dropOverlay.classList.remove("visible");
+    }
+});
+
+document.addEventListener("dragover", e => {
+    e.preventDefault();
+});
+
+document.addEventListener("drop", async e => {
+    e.preventDefault();
+    dragCounter = 0;
+    dropOverlay.classList.remove("visible");
+
+    for (const file of e.dataTransfer.files) {
+        const name = file.name.toLowerCase();
+
+        if (file.type.startsWith("audio/") || /\.(mp3|wav|ogg|m4a|flac|aac|wma)$/.test(name)) {
+            audio.src = URL.createObjectURL(file);
+            document.getElementById("audioFileName").textContent = file.name;
+
+        } else if (name.endsWith(".json")) {
+            words = JSON.parse(await file.text());
+            document.getElementById("jsonFileName").textContent = file.name;
+            if (transcriptText) renderTranscript();
+            statusEl.textContent = `${words.length} words`;
+
+        } else if (name.endsWith(".txt")) {
+            transcriptText = await file.text();
+            document.getElementById("scriptFileName").textContent = file.name;
+            if (words.length) renderTranscript();
+        }
+    }
+});
+
+/* ═══════════════════════════════════════════════════════
+   Helpers
+   ═══════════════════════════════════════════════════════ */
+
+function isIgnorable(ch) {
+    return /[\s。、，「」『』（）()！？!?…・：；,，．]/u.test(ch);
+}
+
+/* ═══════════════════════════════════════════════════════
+   Render Transcript  (sentence-level)
+   ═══════════════════════════════════════════════════════ */
+
+function renderTranscript() {
+
+    transcriptEl.innerHTML = "";
+    spans            = [];
+    sentences        = [];
+    currentWordIdx   = -1;
+    activeSentenceIdx= -1;
+
+    const lines = transcriptText.split(/\r?\n/);
+    let globalWordIdx = 0;
+    let sentNum       = 0;
+
+    for (const line of lines) {
+
+        if (line.trim() === "") continue;
+        sentNum++;
+
+        /* ── Row container ─────────────────────── */
+        const row = document.createElement("div");
+        row.className = "sentence-row";
+
+        /* ── Sentence number (clickable) ───────── */
+        const numEl = document.createElement("div");
+        numEl.className = "sentence-num";
+        numEl.textContent = sentNum;
+        row.appendChild(numEl);
+
+        /* ── Content wrapper ───────────────────── */
+        const content = document.createElement("div");
+        content.className = "sentence-content";
+
+        /* ── Ground-truth line ─────────────────── */
+        const gt = document.createElement("div");
+        gt.className = "sentence-gt";
+
+        const startWordIdx = globalWordIdx;
+        let i = 0;
+
+        while (i < line.length) {
+
+            const ch = line[i];
+
+            // Keep punctuation / whitespace as plain spans
+            if (isIgnorable(ch)) {
+                const s = document.createElement("span");
+                s.textContent = ch;
+                gt.appendChild(s);
+                i++;
+                continue;
+            }
+
+            if (globalWordIdx >= words.length) break;
+
+            const token = words[globalWordIdx].text;
+
+            // Greedy match against ASR token
+            if (line.startsWith(token, i)) {
+
+                const s    = document.createElement("span");
+                s.className = "word";
+                s.textContent = token;
+
+                const wIdx = globalWordIdx;
+                s.onclick  = () => jumpToWord(wIdx);
+
+                gt.appendChild(s);
+                spans.push(s);
+                globalWordIdx++;
+                i += token.length;
+
+            } else {
+                // Transcript differs from ASR — show char, don't consume token
+                const s = document.createElement("span");
+                s.textContent = ch;
+                gt.appendChild(s);
+                i++;
+            }
+        }
+
+        const endWordIdx = globalWordIdx - 1;
+
+        content.appendChild(gt);
+
+        /* ── User-input textarea (dictation) ───── */
+        const inputDiv = document.createElement("div");
+        inputDiv.className = "sentence-input";
+        inputDiv.style.display = "none";
+
+        const ta = document.createElement("textarea");
+        ta.rows       = 1;
+        ta.spellcheck = false;
+        ta.placeholder = "聞いた内容を入力...";
+        ta.addEventListener("input", function () {
+            this.style.height = "auto";
+            this.style.height = this.scrollHeight + "px";
+        });
+
+        inputDiv.appendChild(ta);
+        content.appendChild(inputDiv);
+
+        row.appendChild(content);
+
+        /* ── Reveal button ─────────────────────── */
+        const revBtn = document.createElement("button");
+        revBtn.className = "reveal-btn";
+        revBtn.style.display = "none";
+        revBtn.textContent = "👁";
+        revBtn.title = "Show answer";
+        row.appendChild(revBtn);
+
+        transcriptEl.appendChild(row);
+
+        /* ── Sentence object ───────────────────── */
+        const sIdx = sentences.length;
+
+        const sent = {
+            el          : row,
+            gtEl        : gt,
+            inputEl     : ta,
+            inputDiv    : inputDiv,
+            revealBtn   : revBtn,
+            numEl       : numEl,
+            startWordIdx: startWordIdx,
+            endWordIdx  : endWordIdx,
+            startTime   : startWordIdx <= endWordIdx
+                              ? words[startWordIdx].start_time : null,
+            endTime     : startWordIdx <= endWordIdx
+                              ? words[endWordIdx].end_time : null,
+            revealed    : false
+        };
+
+        sentences.push(sent);
+
+        /* ── Per-sentence event handlers ────────── */
+        numEl.onclick  = () => jumpToSentence(sIdx);
+        revBtn.onclick = () => toggleReveal(sIdx);
+
+        ta.addEventListener("focus", () => {
+            setActiveSentence(sIdx);
+        });
+    }
+
+    applyMode();
+
+    statusEl.textContent =
+        `${words.length} words · ${sentences.length} sentences`;
+
+    console.log(
+        `Matched ${globalWordIdx}/${words.length} ASR tokens, ` +
+        `${sentences.length} sentences`
+    );
+}
+
+/* ═══════════════════════════════════════════════════════
+   Navigation
+   ═══════════════════════════════════════════════════════ */
+
+function jumpToWord(idx) {
+    if (idx < 0 || idx >= words.length) return;
+    audio.currentTime = words[idx].start_time;
+    audio.play();
+    const sIdx = findSentenceForWord(idx);
+    if (sIdx >= 0) setActiveSentence(sIdx);
+}
+
+function jumpToSentence(idx) {
+    if (idx < 0 || idx >= sentences.length) return;
+    const s = sentences[idx];
+    if (s.startTime !== null) {
+        audio.currentTime = s.startTime;
+        audio.play();
+    }
+    setActiveSentence(idx);
+    if (mode === "dictation") s.inputEl.focus();
+    s.el.scrollIntoView({ block: "center", behavior: "smooth" });
+}
+
+function findSentenceForWord(wordIdx) {
+    for (let i = 0; i < sentences.length; i++) {
+        if (wordIdx >= sentences[i].startWordIdx &&
+            wordIdx <= sentences[i].endWordIdx)
+            return i;
+    }
+    return -1;
+}
+
+function findSentenceAtTime(t) {
+    for (let i = 0; i < sentences.length; i++) {
+        const s = sentences[i];
+        if (s.startTime !== null &&
+            t >= s.startTime - 0.1 &&
+            t <= s.endTime  + 0.1)
+            return i;
+    }
+    return -1;
+}
+
+function setActiveSentence(idx) {
+    if (activeSentenceIdx === idx) return;
+    if (activeSentenceIdx >= 0)
+        sentences[activeSentenceIdx].el.classList.remove("active");
+    activeSentenceIdx = idx;
+    if (activeSentenceIdx >= 0)
+        sentences[activeSentenceIdx].el.classList.add("active");
+}
+
+/* ═══════════════════════════════════════════════════════
+   Reveal / Hide
+   ═══════════════════════════════════════════════════════ */
+
+function toggleReveal(idx) {
+    const s = sentences[idx];
+    s.revealed = !s.revealed;
+    s.gtEl.classList.toggle("masked", !s.revealed);
+    s.revealBtn.classList.toggle("revealed", s.revealed);
+    s.revealBtn.title = s.revealed ? "Hide answer" : "Show answer";
+    updateRevealAllBtn();
+}
+
+function revealAll() {
+    const allRevealed = sentences.every(s => s.revealed);
+    sentences.forEach(s => {
+        s.revealed = !allRevealed;
+        s.gtEl.classList.toggle("masked", allRevealed);
+        s.revealBtn.classList.toggle("revealed", !allRevealed);
+    });
+    updateRevealAllBtn();
+}
+
+function updateRevealAllBtn() {
+    const allRevealed =
+        sentences.length > 0 && sentences.every(s => s.revealed);
+    revealAllBtn.textContent = allRevealed ? "Hide All" : "Reveal All";
+}
+
+function resetInputs() {
+    sentences.forEach(s => {
+        s.inputEl.value = "";
+        s.inputEl.style.height = "auto";
+    });
+}
+
+/* ═══════════════════════════════════════════════════════
+   Mode Switching
+   ═══════════════════════════════════════════════════════ */
+
+function setMode(newMode) {
+    mode = newMode;
+    document.querySelectorAll(".mode-btn").forEach(btn =>
+        btn.classList.toggle("active", btn.dataset.mode === mode)
+    );
+    applyMode();
+}
+
+function applyMode() {
+
+    const isDictation = mode === "dictation";
+
+    // Normal mode uses the native <audio> loop; repeat modes loop manually
+    audio.loop = (mode === "normal");
+
+    sentences.forEach(s => {
+
+        // Show / hide dictation UI
+        s.inputDiv.style.display  = isDictation ? "block"  : "none";
+        s.revealBtn.style.display = isDictation ? "inline-block" : "none";
+
+        // Apply / remove blur mask
+        if (isDictation && !s.revealed) {
+            s.gtEl.classList.add("masked");
+        } else if (!isDictation) {
+            s.gtEl.classList.remove("masked");
+        }
+    });
+
+    revealAllBtn.style.display = isDictation ? "inline-block" : "none";
+    resetBtn.style.display     = isDictation ? "inline-block" : "none";
+
+    // Auto-detect active sentence when entering repeat / dictation
+    if (mode !== "normal" &&
+        activeSentenceIdx < 0 &&
+        sentences.length > 0) {
+        const sIdx = findSentenceAtTime(audio.currentTime);
+        setActiveSentence(sIdx >= 0 ? sIdx : 0);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════
+   Playback — timeupdate
+   ═══════════════════════════════════════════════════════ */
+
+audio.addEventListener("timeupdate", () => {
+
+    const t = audio.currentTime;
+
+    /* ── 1. Word highlight (binary search) ─────── */
+
+    let lo = 0, hi = words.length - 1, wordIdx = -1;
+
+    while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if      (t < words[mid].start_time) hi = mid - 1;
+        else if (t > words[mid].end_time)   lo = mid + 1;
+        else  { wordIdx = mid; break; }
+    }
+
+    if (wordIdx !== currentWordIdx) {
+
+        if (currentWordIdx >= 0 && currentWordIdx < spans.length)
+            spans[currentWordIdx].classList.remove("current");
+
+        currentWordIdx = wordIdx;
+
+        if (currentWordIdx >= 0 && currentWordIdx < spans.length) {
+            spans[currentWordIdx].classList.add("current");
+            spans[currentWordIdx].scrollIntoView({
+                block    : "nearest",
+                behavior : "smooth"
+            });
+        }
+    }
+
+    /* ── 2. Sentence tracking (Normal mode) ────── */
+
+    if (mode === "normal" && currentWordIdx >= 0) {
+        const sIdx = findSentenceForWord(currentWordIdx);
+        if (sIdx >= 0) setActiveSentence(sIdx);
+    }
+
+    /* ── 3. Sentence repeat (Repeat & Dictation) ─ */
+
+    if (mode !== "normal") {
+
+        if (activeSentenceIdx < 0) {
+            // Try to auto-detect sentence
+            const sIdx = findSentenceAtTime(t);
+            if (sIdx >= 0) setActiveSentence(sIdx);
+
+        } else {
+            const s = sentences[activeSentenceIdx];
+            if (s.endTime !== null && t > s.endTime + 0.15) {
+                audio.currentTime = s.startTime;
+            }
+        }
+    }
+});
+
+// Handle audio end in repeat modes
+audio.addEventListener("ended", () => {
+    if (mode !== "normal" && activeSentenceIdx >= 0) {
+        const s = sentences[activeSentenceIdx];
+        if (s.startTime !== null) {
+            audio.currentTime = s.startTime;
+            audio.play();
+        }
+    }
+});
+
+/* ═══════════════════════════════════════════════════════
+   Controls
+   ═══════════════════════════════════════════════════════ */
+
+// Mode buttons
+document.querySelectorAll(".mode-btn").forEach(btn =>
+    btn.onclick = () => setMode(btn.dataset.mode)
+);
+
+// Play / Pause
+playBtn.onclick = () => {
+    if (audio.paused) audio.play(); else audio.pause();
+};
+
+audio.onplay  = () => { playBtn.textContent = "⏸ Pause"; };
+audio.onpause = () => { playBtn.textContent = "▶ Play";  };
+
+// Speed
+speedEl.onchange = () => {
+    audio.playbackRate = parseFloat(speedEl.value);
+};
+
+// Search highlight
+searchEl.oninput = () => {
+    const q = searchEl.value.trim();
+    spans.forEach(s => s.classList.remove("match"));
+    if (!q) return;
+    words.forEach((w, i) => {
+        if (w.text.includes(q) && i < spans.length)
+            spans[i].classList.add("match");
+    });
+};
+
+// Reveal all / Reset
+revealAllBtn.onclick = revealAll;
+resetBtn.onclick     = resetInputs;
+
+/* ═══════════════════════════════════════════════════════
+   Keyboard Shortcuts
+   ═══════════════════════════════════════════════════════ */
+
+window.addEventListener("keydown", e => {
+
+    const inInput =
+        e.target.tagName === "INPUT" ||
+        e.target.tagName === "TEXTAREA";
+
+    /* ── Ctrl+Up / Down : navigate sentences ──── */
+    /*    (works even when focused on a textarea)  */
+
+    if (e.ctrlKey &&
+        (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+
+        e.preventDefault();
+
+        const dir    = e.key === "ArrowUp" ? -1 : 1;
+        let   target = (activeSentenceIdx >= 0
+                            ? activeSentenceIdx : 0) + dir;
+        target = Math.max(0, Math.min(sentences.length - 1, target));
+        jumpToSentence(target);
+        return;
+    }
+
+    /* ── Ctrl+Left : jump to start of active sentence ─ */
+
+    if (e.ctrlKey && e.key === "ArrowLeft" && !inInput) {
+        e.preventDefault();
+        if (activeSentenceIdx >= 0) {
+            const s = sentences[activeSentenceIdx];
+            if (s.startTime !== null) {
+                audio.currentTime = s.startTime;
+                audio.play();
+            }
+        }
+        return;
+    }
+
+    /* ── Esc : exit textarea focus ────────────────── */
+
+    if (e.key === "Escape" && inInput) {
+        e.preventDefault();
+        e.target.blur();
+        return;
+    }
+
+    /* ── Enter : finish dictation → exit + reveal ── */
+
+    if (e.key === "Enter" && !e.shiftKey &&
+        e.target.tagName === "TEXTAREA") {
+        e.preventDefault();
+        e.target.blur();
+        // Reveal the sentence this textarea belongs to
+        if (activeSentenceIdx >= 0 && !sentences[activeSentenceIdx].revealed) {
+            toggleReveal(activeSentenceIdx);
+        }
+        return;
+    }
+
+    // The remaining shortcuts are disabled when typing
+    if (inInput) return;
+
+    /* ── Space : play / pause ─────────────────── */
+
+    if (e.code === "Space") {
+        e.preventDefault();
+        if (audio.paused) audio.play(); else audio.pause();
+    }
+
+    /* ── ← : previous ASR word ────────────────── */
+
+    if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        const target = currentWordIdx > 0 ? currentWordIdx - 1 : 0;
+        if (words.length) jumpToWord(target);
+    }
+
+    /* ── → : next ASR word ────────────────────── */
+
+    if (e.key === "ArrowRight") {
+        e.preventDefault();
+        const target = currentWordIdx >= 0 ? currentWordIdx + 1 : 0;
+        if (target < words.length) jumpToWord(target);
+    }
+
+});
+
+</script>
+
+</body>
+</html>
