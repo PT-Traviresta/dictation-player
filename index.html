@@ -10,8 +10,13 @@
 
 *{box-sizing:border-box;margin:0;padding:0}
 
+@font-face {
+    font-family: irohamaru mikami; 
+    src: url('assets/_irohamaru mikami.ttf');
+}
+
 body{
-    font-family:"Yu Gothic","Hiragino Sans","Noto Sans JP","Segoe UI",sans-serif;
+    font-family:"irohamaru mikami","Yu Gothic","Hiragino Sans","Noto Sans JP","Segoe UI",sans-serif;
     /*background:linear-gradient(160deg,#0d0d1a 0%,#1a1a2e 50%,#16213e 100%);*/
     background:linear-gradient(160deg, #c3c3d1 0%, #d2d2d9 50%, #ffffff 100%);
     /*color:#e0e0e0;*/
@@ -273,20 +278,32 @@ select{
 .sentence-gt.masked{
     filter:blur(8px);
     user-select:none;
-    pointer-events:none;
 }
 
 /* ── Word Spans ────────────────────────────────────────── */
 
 .word{
-    padding:2px 4px;
-    border-radius:5px;
+    display:inline-block;
+    padding:2px 6px;
+    margin:1px 2px;
+    border-radius:6px;
     cursor:pointer;
-    transition:all .15s;
+    transition:all .15s ease;
+}
+
+.sentence-gt.masked .word{
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.08);
+}
+
+.sentence-gt.masked .word:hover{
+    background:rgba(255,213,79,0.25);
+    border-color:rgba(255,213,79,0.4);
+    filter:none; /* subtle contrast on hover without revealing text due to parent blur */
 }
 
 .word:hover{
-    background:rgba(255,255,255,0.1);
+    background:rgba(255,255,255,0.12);
 }
 
 .current{
@@ -412,8 +429,7 @@ select{
 <div class="header-row">
     <label class="file-label">
         🎵 Audio
-        <!-- <input type="file" id="audioFile" accept="audio/*"> -->
-        <input type="file" id="audioFile" accept="audio/mpeg, audio/mp3, audio/wav, audio/m4a, audio/x-m4a, .mp3, .wav, .m4a">
+        <input type="file" id="audioFile" accept="audio/*">
         <span class="file-name" id="audioFileName">Choose file</span>
     </label>
     <label class="file-label">
@@ -451,7 +467,7 @@ select{
     <button id="revealAllBtn" class="ctrl-btn" style="display:none">Reveal All</button>
     <button id="resetBtn" class="ctrl-btn" style="display:none">🗑 Reset</button>
     <span class="shortcuts-hint"
-          title="Space : Play / Pause&#10;← / → : Prev / Next word&#10;Ctrl+↑ / ↓ : Prev / Next sentence&#10;Ctrl+← : Replay sentence from start&#10;Esc : Exit text field&#10;Enter : Finish &amp; reveal sentence">⌨️</span>
+          title="Space : Play / Pause&#10;← / → : Prev / Next word&#10;Ctrl+↑ / ↓ : Prev / Next sentence&#10;Ctrl+← : Replay sentence from start&#10;Esc : Exit text field&#10;Enter : Focus input / Reveal masked sentence">⌨️</span>
 </div>
 
 </header>
@@ -1035,17 +1051,38 @@ window.addEventListener("keydown", e => {
         return;
     }
 
-    /* ── Enter : finish dictation → exit + reveal ── */
+    /* ── Enter : focus input or reveal mask ───────── */
 
-    if (e.key === "Enter" && !e.shiftKey &&
-        e.target.tagName === "TEXTAREA") {
-        e.preventDefault();
-        e.target.blur();
-        // Reveal the sentence this textarea belongs to
-        if (activeSentenceIdx >= 0 && !sentences[activeSentenceIdx].revealed) {
-            toggleReveal(activeSentenceIdx);
+    if (e.key === "Enter" && !e.shiftKey) {
+        if (inInput) {
+            // Find which sentence this input belongs to
+            let sIdx = sentences.findIndex(s => s.inputEl === e.target);
+            if (sIdx === -1) sIdx = activeSentenceIdx;
+
+            if (sIdx >= 0) {
+                if (!sentences[sIdx].revealed) {
+                    toggleReveal(sIdx);
+                }
+            }
+            e.preventDefault();
+            e.target.blur();
+            return;
+        } else if (mode === "dictation") {
+            // Focus the input field of the currently active / playing sentence
+            let targetIdx = activeSentenceIdx;
+            if (targetIdx < 0 && sentences.length > 0) {
+                targetIdx = findSentenceAtTime(audio.currentTime);
+                if (targetIdx < 0) targetIdx = 0;
+            }
+            if (targetIdx >= 0 && targetIdx < sentences.length) {
+                e.preventDefault();
+                setActiveSentence(targetIdx);
+                const s = sentences[targetIdx];
+                s.inputEl.focus();
+                s.el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                return;
+            }
         }
-        return;
     }
 
     // The remaining shortcuts are disabled when typing
