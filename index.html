@@ -39,6 +39,55 @@ header{
     display:flex;
     flex-direction:column;
     gap:8px;
+    position:relative;
+    transition:max-height .3s ease, padding .3s ease;
+}
+
+header.collapsed #headerBody{
+    display:none;
+}
+
+.header-topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+}
+
+.header-title-bar{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-weight:700;
+    font-size:14px;
+    color:#ffd54f;
+    letter-spacing:0.5px;
+}
+
+.collapse-btn{
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:6px;
+    color:#aaa;
+    cursor:pointer;
+    padding:3px 9px;
+    font-size:12px;
+    transition:all .2s;
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    user-select:none;
+}
+
+.collapse-btn:hover{
+    background:rgba(255,255,255,0.12);
+    color:#fff;
+}
+
+#headerBody{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
 }
 
 .header-row{
@@ -153,6 +202,18 @@ audio{
 .ctrl-btn:hover{
     background:rgba(255,255,255,0.12);
     color:#fff;
+}
+
+.ctrl-btn.toggle-active{
+    background:linear-gradient(135deg,#ffd54f,#ffb300);
+    color:#1a1a2e;
+    font-weight:700;
+    border-color:transparent;
+}
+
+.ctrl-btn.toggle-active:hover{
+    background:linear-gradient(135deg,#ffe082,#ffca28);
+    color:#1a1a2e;
 }
 
 .ctrl-label{
@@ -417,6 +478,193 @@ select{
     color:#888;
 }
 
+/* ── A-B Loop Controls ─────────────────────────────────── */
+
+.ab-group{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:8px;
+    padding:3px 8px;
+    flex-wrap:wrap;
+}
+
+.ab-point{
+    display:inline-flex;
+    align-items:center;
+    gap:3px;
+    font-size:12px;
+}
+
+.ab-tag{
+    font-weight:700;
+    color:#ffd54f;
+    font-size:12px;
+    min-width:14px;
+}
+
+.time-box-group{
+    display:inline-flex;
+    align-items:center;
+    gap:2px;
+    background:rgba(0,0,0,0.3);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:6px;
+    padding:2px 5px;
+}
+
+.time-box{
+    width:24px;
+    background:transparent;
+    border:none;
+    color:#e0e0e0;
+    font-family:monospace;
+    font-size:12px;
+    text-align:center;
+    outline:none;
+    padding:1px 0;
+    -moz-appearance:textfield;
+}
+
+.time-box::-webkit-inner-spin-button,
+.time-box::-webkit-outer-spin-button{
+    -webkit-appearance:none;
+    margin:0;
+}
+
+.time-box.ms{
+    width:32px;
+}
+
+.time-sep{
+    color:#666;
+    font-size:11px;
+    font-family:monospace;
+    user-select:none;
+}
+
+.ab-btn{
+    padding:3px 8px;
+    font-size:11px;
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:6px;
+    color:#ccc;
+    cursor:pointer;
+    transition:all .15s;
+    white-space:nowrap;
+}
+
+.ab-btn:hover{
+    background:rgba(255,213,79,0.15);
+    color:#ffd54f;
+    border-color:rgba(255,213,79,0.35);
+}
+
+.ab-active-badge{
+    font-size:11px;
+    padding:2px 6px;
+    border-radius:4px;
+    background:rgba(0,212,255,0.15);
+    color:#00d4ff;
+    border:1px solid rgba(0,212,255,0.3);
+    display:none;
+}
+
+/* ── Mobile Action Bar & Floating Toggle ─────────────────── */
+
+#mobileBarToggle{
+    position:fixed;
+    bottom:16px;
+    right:16px;
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    background:rgba(20,20,38,0.92);
+    border:1px solid rgba(255,213,79,0.4);
+    color:#ffd54f;
+    box-shadow:0 4px 16px rgba(0,0,0,0.5);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:18px;
+    cursor:pointer;
+    z-index:999;
+    user-select:none;
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    transition:transform .2s, background .2s;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+}
+
+#mobileBarToggle:hover{
+    transform:scale(1.08);
+    background:rgba(30,30,55,0.98);
+}
+
+#mobileActionBar{
+    position:fixed;
+    bottom:0;
+    left:0;
+    right:0;
+    background:rgba(14,14,28,0.95);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    border-top:1px solid rgba(255,255,255,0.1);
+    padding:8px 12px 10px;
+    display:none;
+    justify-content:center;
+    align-items:center;
+    gap:10px;
+    z-index:950;
+    box-shadow:0 -4px 20px rgba(0,0,0,0.5);
+}
+
+#mobileActionBar.visible{
+    display:flex !important;
+}
+
+#mobileActionBar.visible ~ #mobileBarToggle{
+    bottom:64px;
+}
+
+.mobile-action-btn{
+    flex:1;
+    max-width:140px;
+    padding:8px 12px;
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:10px;
+    color:#e0e0e0;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    transition:all .15s;
+    user-select:none;
+    text-align:center;
+    touch-action:manipulation;
+}
+
+.mobile-action-btn:active{
+    background:rgba(255,213,79,0.25);
+    color:#ffd54f;
+    border-color:rgba(255,213,79,0.5);
+    transform:scale(0.97);
+}
+
+.mobile-action-btn.accent{
+    background:linear-gradient(135deg,rgba(255,213,79,0.2),rgba(255,179,0,0.2));
+    border-color:rgba(255,213,79,0.4);
+    color:#ffd54f;
+}
+
 </style>
 </head>
 
@@ -424,12 +672,25 @@ select{
 
 <!-- ── Header ──────────────────────────────────────────── -->
 
-<header>
+<header id="mainHeader">
+
+<div class="header-topbar">
+    <div class="header-title-bar">
+        <span>🎧 Dictation Player</span>
+        <span id="abBadge" class="ab-active-badge">A-B Loop Active</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+        <span id="status">No transcript loaded</span>
+        <button id="headerCollapseBtn" class="collapse-btn" title="Toggle panel collapse">▲ Hide Controls</button>
+    </div>
+</div>
+
+<div id="headerBody">
 
 <div class="header-row">
     <label class="file-label">
         🎵 Audio
-        <input type="file" id="audioFile" accept="audio/mpeg, audio/mp3, audio/wav, audio/m4a, audio/x-m4a, .mp3, .wav, .m4a">
+        <input type="file" id="audioFile" accept="audio/*">
         <span class="file-name" id="audioFileName">Choose file</span>
     </label>
     <label class="file-label">
@@ -443,15 +704,14 @@ select{
         <span class="file-name" id="scriptFileName">Choose file</span>
     </label>
     <audio id="audio" controls></audio>
-    <span id="status">No transcript loaded</span>
 </div>
 
 <div class="header-row">
     <div class="mode-group">
         <button class="mode-btn active" data-mode="normal">▶ Normal</button>
-        <button class="mode-btn" data-mode="sentence-repeat">🔁 Repeat</button>
         <button class="mode-btn" data-mode="dictation">🎧 Dictation</button>
     </div>
+    <button id="repeatBtn" class="ctrl-btn" title="Toggle repeating the current sentence">🔁 Repeat: Off</button>
     <button id="playBtn" class="ctrl-btn">▶ Play</button>
     <label class="ctrl-label">Speed
         <select id="speed">
@@ -467,14 +727,56 @@ select{
     <button id="revealAllBtn" class="ctrl-btn" style="display:none">Reveal All</button>
     <button id="resetBtn" class="ctrl-btn" style="display:none">🗑 Reset</button>
     <span class="shortcuts-hint"
-          title="Space : Play / Pause&#10;← / → : Prev / Next word&#10;Ctrl+↑ / ↓ : Prev / Next sentence&#10;Ctrl+← : Replay sentence from start&#10;Esc : Exit text field&#10;Enter : Focus input / Reveal masked sentence">⌨️</span>
+          title="Space : Play / Pause&#10;R / Ctrl+R : Toggle sentence repeat&#10;← / → : Prev / Next word&#10;Ctrl+↑ / ↓ : Prev / Next sentence&#10;Ctrl+← : Replay sentence from start&#10;Ctrl+→ : Advance to next sentence&#10;Esc : Exit text field&#10;Enter : Focus input / Reveal masked sentence">⌨️</span>
 </div>
+
+<!-- A-B Loop Row -->
+<div class="header-row">
+    <div class="ab-group">
+        <span class="ab-tag">A:</span>
+        <div class="time-box-group">
+            <input type="number" id="ab_a_m" class="time-box" placeholder="mm" min="0" max="999">
+            <span class="time-sep">:</span>
+            <input type="number" id="ab_a_s" class="time-box" placeholder="ss" min="0" max="59">
+            <span class="time-sep">.</span>
+            <input type="number" id="ab_a_ms" class="time-box ms" placeholder="ms" min="0" max="999">
+        </div>
+        <button id="setABtn" class="ab-btn" title="Set A to start of current sentence (-0.1s)">Set A</button>
+        <button id="clearABtn" class="ab-btn" title="Clear point A" style="opacity:0.7;">✕</button>
+
+        <span class="ab-tag" style="margin-left:8px;">B:</span>
+        <div class="time-box-group">
+            <input type="number" id="ab_b_m" class="time-box" placeholder="mm" min="0" max="999">
+            <span class="time-sep">:</span>
+            <input type="number" id="ab_b_s" class="time-box" placeholder="ss" min="0" max="59">
+            <span class="time-sep">.</span>
+            <input type="number" id="ab_b_ms" class="time-box ms" placeholder="ms" min="0" max="999">
+        </div>
+        <button id="setBBtn" class="ab-btn" title="Set B to end of current sentence (+0.1s)">Set B</button>
+        <button id="clearBBtn" class="ab-btn" title="Clear point B" style="opacity:0.7;">✕</button>
+        <button id="clearAllABBtn" class="ab-btn" title="Clear both A and B" style="margin-left:4px;">Reset A-B</button>
+    </div>
+</div>
+
+</div><!-- /headerBody -->
 
 </header>
 
 <!-- ── Transcript ──────────────────────────────────────── -->
 
 <div id="transcript"></div>
+
+<!-- ── Mobile Action Bar ───────────────────────────────── -->
+
+<div id="mobileActionBar">
+    <button id="mobPrevBtn" class="mobile-action-btn" title="Previous Sentence">⏮ Prev</button>
+    <button id="mobNextContBtn" class="mobile-action-btn accent" title="Play continuously to next sentence">⏭ Next (Cont)</button>
+    <button id="mobNextJumpBtn" class="mobile-action-btn" title="Jump to next sentence">⏭ Jump</button>
+</div>
+
+<!-- ── Floating Button to Toggle Mobile Bar ────────────── -->
+
+<button id="mobileBarToggle" title="Toggle action buttons">🎮</button>
 
 <!-- ── Drop Overlay ────────────────────────────────────── -->
 
@@ -496,11 +798,37 @@ select{
 const audio        = document.getElementById("audio");
 const transcriptEl = document.getElementById("transcript");
 const playBtn      = document.getElementById("playBtn");
+const repeatBtn    = document.getElementById("repeatBtn");
 const speedEl      = document.getElementById("speed");
 const searchEl     = document.getElementById("search");
 const statusEl     = document.getElementById("status");
 const revealAllBtn = document.getElementById("revealAllBtn");
 const resetBtn     = document.getElementById("resetBtn");
+
+// Collapsible header
+const mainHeader        = document.getElementById("mainHeader");
+const headerCollapseBtn = document.getElementById("headerCollapseBtn");
+
+// A-B loop elements
+const ab_a_m     = document.getElementById("ab_a_m");
+const ab_a_s     = document.getElementById("ab_a_s");
+const ab_a_ms    = document.getElementById("ab_a_ms");
+const ab_b_m     = document.getElementById("ab_b_m");
+const ab_b_s     = document.getElementById("ab_b_s");
+const ab_b_ms    = document.getElementById("ab_b_ms");
+const setABtn    = document.getElementById("setABtn");
+const setBBtn    = document.getElementById("setBBtn");
+const clearABtn  = document.getElementById("clearABtn");
+const clearBBtn  = document.getElementById("clearBBtn");
+const clearAllABBtn = document.getElementById("clearAllABBtn");
+const abBadge    = document.getElementById("abBadge");
+
+// Mobile controls
+const mobileActionBar  = document.getElementById("mobileActionBar");
+const mobileBarToggle   = document.getElementById("mobileBarToggle");
+const mobPrevBtn       = document.getElementById("mobPrevBtn");
+const mobNextContBtn   = document.getElementById("mobNextContBtn");
+const mobNextJumpBtn   = document.getElementById("mobNextJumpBtn");
 
 /* ═══════════════════════════════════════════════════════
    State
@@ -511,10 +839,16 @@ let spans            = [];   // DOM <span> for each matched word
 let sentences        = [];   // sentence objects (see renderTranscript)
 let currentWordIdx   = -1;   // highlighted word index
 let activeSentenceIdx= -1;   // active sentence (for repeat loop target)
-let mode             = "normal";  // "normal" | "sentence-repeat" | "dictation"
+let mode             = "normal";  // "normal" | "dictation"
+let repeatEnabled    = false;     // sentence repeat toggle
+let pendingAdvance   = false;     // when true in repeat mode, plays past current sentence to next
 let transcriptText   = "";
 
-audio.loop = true;  // default for Normal mode
+// A-B loop state (times in seconds, null if not set)
+let loopPointA = null;
+let loopPointB = null;
+
+audio.loop = true;  // native loop when repeat is off
 
 /* ═══════════════════════════════════════════════════════
    File Loading
@@ -767,6 +1101,7 @@ function renderTranscript() {
 
 function jumpToWord(idx) {
     if (idx < 0 || idx >= words.length) return;
+    pendingAdvance = false;
     audio.currentTime = words[idx].start_time;
     audio.play();
     const sIdx = findSentenceForWord(idx);
@@ -775,6 +1110,25 @@ function jumpToWord(idx) {
 
 function jumpToSentence(idx) {
     if (idx < 0 || idx >= sentences.length) return;
+
+    // In repeat mode, do not allow jumping beyond A-B boundaries if set
+    if (repeatEnabled) {
+        const s = sentences[idx];
+        const effA = loopPointA !== null ? loopPointA : 0;
+        const effB = loopPointB !== null ? loopPointB : (audio.duration || Infinity);
+
+        if (s.startTime !== null) {
+            // If the target sentence ends before A, or starts after B, don't allow jumping out of bounds
+            if (loopPointA !== null && s.endTime !== null && s.endTime < effA) {
+                return;
+            }
+            if (loopPointB !== null && s.startTime > effB) {
+                return;
+            }
+        }
+    }
+
+    pendingAdvance = false;
     const s = sentences[idx];
     if (s.startTime !== null) {
         audio.currentTime = s.startTime;
@@ -850,24 +1204,42 @@ function resetInputs() {
     });
 }
 
-/* ═══════════════════════════════════════════════════════
-   Mode Switching
-   ═══════════════════════════════════════════════════════ */
+function toggleRepeat(forceState) {
+    if (typeof forceState === "boolean") {
+        repeatEnabled = forceState;
+    } else {
+        repeatEnabled = !repeatEnabled;
+    }
+
+    // When enabling repeat, ensure an active sentence is targeted
+    if (repeatEnabled && activeSentenceIdx < 0 && sentences.length > 0) {
+        const sIdx = findSentenceAtTime(audio.currentTime);
+        setActiveSentence(sIdx >= 0 ? sIdx : 0);
+    }
+
+    updateRepeatBtn();
+}
+
+function updateRepeatBtn() {
+    audio.loop = !repeatEnabled; // Native loop when sentence repeat is off
+    repeatBtn.classList.toggle("toggle-active", repeatEnabled);
+    repeatBtn.textContent = repeatEnabled ? "🔁 Repeat: On" : "🔁 Repeat: Off";
+}
 
 function setMode(newMode) {
     mode = newMode;
     document.querySelectorAll(".mode-btn").forEach(btn =>
         btn.classList.toggle("active", btn.dataset.mode === mode)
     );
+    if (mode === "dictation") {
+        repeatEnabled = true;
+    }
     applyMode();
 }
 
 function applyMode() {
 
     const isDictation = mode === "dictation";
-
-    // Normal mode uses the native <audio> loop; repeat modes loop manually
-    audio.loop = (mode === "normal");
 
     sentences.forEach(s => {
 
@@ -886,13 +1258,15 @@ function applyMode() {
     revealAllBtn.style.display = isDictation ? "inline-block" : "none";
     resetBtn.style.display     = isDictation ? "inline-block" : "none";
 
-    // Auto-detect active sentence when entering repeat / dictation
-    if (mode !== "normal" &&
+    // Auto-detect active sentence when in dictation
+    if (isDictation &&
         activeSentenceIdx < 0 &&
         sentences.length > 0) {
         const sIdx = findSentenceAtTime(audio.currentTime);
         setActiveSentence(sIdx >= 0 ? sIdx : 0);
     }
+
+    updateRepeatBtn();
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -902,6 +1276,23 @@ function applyMode() {
 audio.addEventListener("timeupdate", () => {
 
     const t = audio.currentTime;
+
+    /* ── 0. A-B Loop Enforcement (Always Respected) ── */
+
+    const effA = loopPointA !== null ? loopPointA : 0;
+    const effB = loopPointB !== null ? loopPointB : (audio.duration || Infinity);
+
+    // If currentTime exceeds point B, loop back to point A
+    if (t >= effB) {
+        audio.currentTime = effA;
+        return;
+    }
+
+    // If currentTime is somehow before point A (e.g. initial seek), adjust
+    if (loopPointA !== null && t < effA - 0.5) {
+        audio.currentTime = effA;
+        return;
+    }
 
     /* ── 1. Word highlight (binary search) ─────── */
 
@@ -930,34 +1321,69 @@ audio.addEventListener("timeupdate", () => {
         }
     }
 
-    /* ── 2. Sentence tracking (Normal mode) ────── */
+    /* ── 2. Sentence tracking (when repeat is off) ─ */
 
-    if (mode === "normal" && currentWordIdx >= 0) {
+    if (!repeatEnabled && currentWordIdx >= 0) {
         const sIdx = findSentenceForWord(currentWordIdx);
         if (sIdx >= 0) setActiveSentence(sIdx);
     }
 
-    /* ── 3. Sentence repeat (Repeat & Dictation) ─ */
+    /* ── 3. Sentence repeat (when repeat toggle is ON) ─ */
 
-    if (mode !== "normal") {
+    if (repeatEnabled) {
 
         if (activeSentenceIdx < 0) {
-            // Try to auto-detect sentence
+            // Auto-detect sentence
             const sIdx = findSentenceAtTime(t);
             if (sIdx >= 0) setActiveSentence(sIdx);
+
+        } else if (pendingAdvance) {
+            // User requested to advance: let audio play continuously past the current sentence
+            const curSent = sentences[activeSentenceIdx];
+            const nextIdx = activeSentenceIdx + 1;
+
+            if (nextIdx < sentences.length) {
+                const nextSent = sentences[nextIdx];
+                // Check if playback has entered the next sentence
+                if (nextSent.startTime !== null && t >= nextSent.startTime - 0.05) {
+                    pendingAdvance = false;
+                    setActiveSentence(nextIdx);
+                    if (mode === "dictation") sentences[nextIdx].inputEl.focus();
+                } else if (curSent.endTime !== null && t > curSent.endTime + 1.5) {
+                    // Safety: in case of long pause between sentences, snap to next sentence
+                    pendingAdvance = false;
+                    setActiveSentence(nextIdx);
+                    if (nextSent.startTime !== null && t < nextSent.startTime - 0.5) {
+                        audio.currentTime = Math.max(effA, nextSent.startTime - 0.5);
+                    }
+                    if (mode === "dictation") sentences[nextIdx].inputEl.focus();
+                }
+            } else {
+                // At the last sentence, loop it
+                pendingAdvance = false;
+                if (curSent.endTime !== null && t > curSent.endTime + 0.15) {
+                    audio.currentTime = Math.max(effA, curSent.startTime);
+                }
+            }
 
         } else {
             const s = sentences[activeSentenceIdx];
             if (s.endTime !== null && t > s.endTime + 0.15) {
-                audio.currentTime = s.startTime;
+                audio.currentTime = Math.max(effA, s.startTime);
             }
         }
     }
 });
 
-// Handle audio end in repeat modes
+// Handle audio end (or when end of loop reached)
 audio.addEventListener("ended", () => {
-    if (mode !== "normal" && activeSentenceIdx >= 0) {
+    const effA = loopPointA !== null ? loopPointA : 0;
+    if (loopPointA !== null || loopPointB !== null) {
+        audio.currentTime = effA;
+        audio.play();
+        return;
+    }
+    if (repeatEnabled && activeSentenceIdx >= 0) {
         const s = sentences[activeSentenceIdx];
         if (s.startTime !== null) {
             audio.currentTime = s.startTime;
@@ -974,6 +1400,9 @@ audio.addEventListener("ended", () => {
 document.querySelectorAll(".mode-btn").forEach(btn =>
     btn.onclick = () => setMode(btn.dataset.mode)
 );
+
+// Repeat toggle button
+repeatBtn.onclick = () => toggleRepeat();
 
 // Play / Pause
 playBtn.onclick = () => {
@@ -1002,6 +1431,185 @@ searchEl.oninput = () => {
 // Reveal all / Reset
 revealAllBtn.onclick = revealAll;
 resetBtn.onclick     = resetInputs;
+
+/* ═══════════════════════════════════════════════════════
+   Collapsible Header
+   ═══════════════════════════════════════════════════════ */
+
+headerCollapseBtn.onclick = () => {
+    const isCollapsed = mainHeader.classList.toggle("collapsed");
+    headerCollapseBtn.textContent = isCollapsed ? "▼ Show Controls" : "▲ Hide Controls";
+};
+
+/* ═══════════════════════════════════════════════════════
+   A-B Loop Logic
+   ═══════════════════════════════════════════════════════ */
+
+function secondsToTimeParts(sec) {
+    if (sec === null || isNaN(sec) || sec < 0) return { m: "", s: "", ms: "" };
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    const ms = Math.floor((sec - Math.floor(sec)) * 1000);
+    return {
+        m: String(m).padStart(2, "0"),
+        s: String(s).padStart(2, "0"),
+        ms: String(ms).padStart(3, "0")
+    };
+}
+
+function timePartsToSeconds(mVal, sVal, msVal) {
+    if (mVal === "" && sVal === "" && msVal === "") return null;
+    const m = parseFloat(mVal) || 0;
+    const s = parseFloat(sVal) || 0;
+    const ms = parseFloat(msVal) || 0;
+    return Math.max(0, m * 60 + s + ms / 1000);
+}
+
+function updateABInputs() {
+    const partsA = secondsToTimeParts(loopPointA);
+    ab_a_m.value = partsA.m;
+    ab_a_s.value = partsA.s;
+    ab_a_ms.value = partsA.ms;
+
+    const partsB = secondsToTimeParts(loopPointB);
+    ab_b_m.value = partsB.m;
+    ab_b_s.value = partsB.s;
+    ab_b_ms.value = partsB.ms;
+
+    updateABBadge();
+}
+
+function updateABBadge() {
+    const hasLoop = loopPointA !== null || loopPointB !== null;
+    abBadge.style.display = hasLoop ? "inline-block" : "none";
+}
+
+function readABFromInputs() {
+    loopPointA = timePartsToSeconds(ab_a_m.value, ab_a_s.value, ab_a_ms.value);
+    loopPointB = timePartsToSeconds(ab_b_m.value, ab_b_s.value, ab_b_ms.value);
+
+    // Validate if both set and B <= A
+    if (loopPointA !== null && loopPointB !== null && loopPointB <= loopPointA) {
+        loopPointB = loopPointA + 0.5;
+        const partsB = secondsToTimeParts(loopPointB);
+        ab_b_m.value = partsB.m;
+        ab_b_s.value = partsB.s;
+        ab_b_ms.value = partsB.ms;
+    }
+
+    updateABBadge();
+}
+
+// Attach input change listeners to A-B boxes
+[ab_a_m, ab_a_s, ab_a_ms, ab_b_m, ab_b_s, ab_b_ms].forEach(input => {
+    input.addEventListener("input", readABFromInputs);
+    input.addEventListener("change", readABFromInputs);
+});
+
+// Set A button: start of current sentence (-0.1s offset)
+setABtn.onclick = () => {
+    let targetSentence = null;
+    if (activeSentenceIdx >= 0 && activeSentenceIdx < sentences.length) {
+        targetSentence = sentences[activeSentenceIdx];
+    } else {
+        const sIdx = findSentenceAtTime(audio.currentTime);
+        if (sIdx >= 0) targetSentence = sentences[sIdx];
+    }
+
+    if (targetSentence && targetSentence.startTime !== null) {
+        loopPointA = Math.max(0, targetSentence.startTime - 0.1);
+    } else {
+        loopPointA = Math.max(0, audio.currentTime - 0.1);
+    }
+
+    // Auto-adjust B if needed
+    if (loopPointB !== null && loopPointB <= loopPointA) {
+        loopPointB = null;
+    }
+
+    updateABInputs();
+};
+
+// Set B button: end of current sentence (+0.1s offset)
+setBBtn.onclick = () => {
+    let targetSentence = null;
+    if (activeSentenceIdx >= 0 && activeSentenceIdx < sentences.length) {
+        targetSentence = sentences[activeSentenceIdx];
+    } else {
+        const sIdx = findSentenceAtTime(audio.currentTime);
+        if (sIdx >= 0) targetSentence = sentences[sIdx];
+    }
+
+    if (targetSentence && targetSentence.endTime !== null) {
+        loopPointB = targetSentence.endTime + 0.1;
+    } else {
+        loopPointB = audio.currentTime + 0.1;
+    }
+
+    // Auto-adjust A if needed
+    if (loopPointA !== null && loopPointA >= loopPointB) {
+        loopPointA = Math.max(0, loopPointB - 0.5);
+    }
+
+    updateABInputs();
+};
+
+clearABtn.onclick = () => {
+    loopPointA = null;
+    updateABInputs();
+};
+
+clearBBtn.onclick = () => {
+    loopPointB = null;
+    updateABInputs();
+};
+
+clearAllABBtn.onclick = () => {
+    loopPointA = null;
+    loopPointB = null;
+    updateABInputs();
+};
+
+/* ═══════════════════════════════════════════════════════
+   Mobile Action Bar & Floating Button
+   ═══════════════════════════════════════════════════════ */
+
+function toggleMobileActionBar(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    mobileActionBar.classList.toggle("visible");
+}
+
+mobileBarToggle.addEventListener("click", toggleMobileActionBar);
+mobileBarToggle.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    toggleMobileActionBar();
+});
+
+// Mobile Prev sentence button
+mobPrevBtn.onclick = () => {
+    let target = (activeSentenceIdx >= 0 ? activeSentenceIdx : 0) - 1;
+    target = Math.max(0, target);
+    jumpToSentence(target);
+};
+
+// Mobile Next Jump button
+mobNextJumpBtn.onclick = () => {
+    let target = (activeSentenceIdx >= 0 ? activeSentenceIdx : 0) + 1;
+    target = Math.min(sentences.length - 1, target);
+    jumpToSentence(target);
+};
+
+// Mobile Next Continuous button (Ctrl+Right equivalent)
+mobNextContBtn.onclick = () => {
+    if (!repeatEnabled) {
+        toggleRepeat(true);
+    }
+    pendingAdvance = true;
+    if (audio.paused) audio.play();
+};
 
 /* ═══════════════════════════════════════════════════════
    Keyboard Shortcuts
@@ -1033,6 +1641,7 @@ window.addEventListener("keydown", e => {
 
     if (e.ctrlKey && e.key === "ArrowLeft" && !inInput) {
         e.preventDefault();
+        pendingAdvance = false;
         if (activeSentenceIdx >= 0) {
             const s = sentences[activeSentenceIdx];
             if (s.startTime !== null) {
@@ -1040,6 +1649,17 @@ window.addEventListener("keydown", e => {
                 audio.play();
             }
         }
+        return;
+    }
+
+    /* ── Ctrl+Right : advance continuously to next sentence (when repeat is ON) ── */
+
+    if (e.ctrlKey && e.key === "ArrowRight") {
+        if (!repeatEnabled) return; // Do nothing if repeat is OFF
+        e.preventDefault();
+        // Play continuously past the end of the current sentence to the next sentence
+        pendingAdvance = true;
+        if (audio.paused) audio.play();
         return;
     }
 
@@ -1087,6 +1707,14 @@ window.addEventListener("keydown", e => {
 
     // The remaining shortcuts are disabled when typing
     if (inInput) return;
+
+    /* ── R / Ctrl+R : toggle sentence repeat ──── */
+
+    if ((e.key === "r" || e.key === "R") && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        toggleRepeat();
+        return;
+    }
 
     /* ── Space : play / pause ─────────────────── */
 
