@@ -690,7 +690,7 @@ select{
 <div class="header-row">
     <label class="file-label">
         🎵 Audio
-        <input type="file" id="audioFile" accept="audio/*">
+        <input type="file" id="audioFile" accept="audio/mpeg, audio/mp3, audio/wav, audio/m4a, audio/x-m4a, .mp3, .wav, .m4a">
         <span class="file-name" id="audioFileName">Choose file</span>
     </label>
     <label class="file-label">
@@ -859,6 +859,7 @@ document.getElementById("audioFile").onchange = e => {
     if (!file) return;
     audio.src = URL.createObjectURL(file);
     document.getElementById("audioFileName").textContent = file.name;
+    resetABLoop();
 };
 
 document.getElementById("jsonFile").onchange = async e => {
@@ -915,6 +916,7 @@ document.addEventListener("drop", async e => {
         if (file.type.startsWith("audio/") || /\.(mp3|wav|ogg|m4a|flac|aac|wma)$/.test(name)) {
             audio.src = URL.createObjectURL(file);
             document.getElementById("audioFileName").textContent = file.name;
+            resetABLoop();
 
         } else if (name.endsWith(".json")) {
             words = JSON.parse(await file.text());
@@ -1108,7 +1110,43 @@ function jumpToWord(idx) {
     if (sIdx >= 0) setActiveSentence(sIdx);
 }
 
+function findSentenceForLoopPointA(effA) {
+    if (sentences.length === 0) return -1;
+    for (let i = 0; i < sentences.length; i++) {
+        const s = sentences[i];
+        if (s.startTime !== null && s.endTime !== null) {
+            // If effA is before or at sentence start, this is the first upcoming sentence
+            if (s.startTime >= effA) return i;
+            // If effA is inside the sentence, check if it's not just the very tail end
+            if (effA >= s.startTime && effA < s.endTime - 0.15) return i;
+        }
+    }
+    return Math.max(0, sentences.length - 1);
+}
+
+function wrapToLoopPointA() {
+    if (sentences.length === 0) return;
+    pendingAdvance = false;
+    const effA = loopPointA !== null ? loopPointA : 0;
+    let startIdx = findSentenceForLoopPointA(effA);
+    if (startIdx < 0 || startIdx >= sentences.length) {
+        startIdx = 0;
+    }
+    const targetSent = sentences[startIdx];
+    audio.currentTime = effA;
+    audio.play();
+    setActiveSentence(startIdx);
+    if (mode === "dictation" && targetSent.inputEl) targetSent.inputEl.focus();
+    if (targetSent.el) targetSent.el.scrollIntoView({ block: "center", behavior: "smooth" });
+}
+
 function jumpToSentence(idx) {
+    // In repeat mode, jumping past the last sentence wraps around to Point A
+    if (repeatEnabled && idx >= sentences.length && sentences.length > 0) {
+        wrapToLoopPointA();
+        return;
+    }
+
     if (idx < 0 || idx >= sentences.length) return;
 
     // In repeat mode, do not allow jumping beyond A-B boundaries if set
@@ -1118,11 +1156,13 @@ function jumpToSentence(idx) {
         const effB = loopPointB !== null ? loopPointB : (audio.duration || Infinity);
 
         if (s.startTime !== null) {
-            // If the target sentence ends before A, or starts after B, don't allow jumping out of bounds
+            // If the target sentence ends before A, don't allow jumping out of bounds
             if (loopPointA !== null && s.endTime !== null && s.endTime < effA) {
                 return;
             }
-            if (loopPointB !== null && s.startTime > effB) {
+            // If the target sentence starts after B, wrap around to Point A (start a new loop)
+            if (loopPointB !== null && s.startTime >= effB) {
+                wrapToLoopPointA();
                 return;
             }
         }
@@ -1135,8 +1175,8 @@ function jumpToSentence(idx) {
         audio.play();
     }
     setActiveSentence(idx);
-    if (mode === "dictation") s.inputEl.focus();
-    s.el.scrollIntoView({ block: "center", behavior: "smooth" });
+    if (mode === "dictation" && s.inputEl) s.inputEl.focus();
+    if (s.el) s.el.scrollIntoView({ block: "center", behavior: "smooth" });
 }
 
 function findSentenceForWord(wordIdx) {
@@ -1148,13 +1188,21 @@ function findSentenceForWord(wordIdx) {
     return -1;
 }
 
-function findSentenceAtTime(t) {
+function findSentenceAtTime(t, findNearestNext = false) {
     for (let i = 0; i < sentences.length; i++) {
         const s = sentences[i];
         if (s.startTime !== null &&
             t >= s.startTime - 0.1 &&
             t <= s.endTime  + 0.1)
             return i;
+    }
+    if (findNearestNext) {
+        for (let i = 0; i < sentences.length; i++) {
+            const s = sentences[i];
+            if (s.startTime !== null && s.startTime > t) {
+                return i;
+            }
+        }
     }
     return -1;
 }
@@ -1281,16 +1329,33 @@ audio.addEventListener("timeupdate", () => {
 
     const effA = loopPointA !== null ? loopPointA : 0;
     const effB = loopPointB !== null ? loopPointB : (audio.duration || Infinity);
-
     // If currentTime exceeds point B, loop back to point A
     if (t >= effB) {
         audio.currentTime = effA;
+        pendingAdvance = false;
+        if (repeatEnabled || loopPointA !== null || loopPointB !== null) {
+            const startIdx = findSentenceForLoopPointA(effA);
+            if (startIdx >= 0 && startIdx < sentences.length) {
+                setActiveSentence(startIdx);
+                const startSent = sentences[startIdx];
+                if (mode === "dictation" && startSent.inputEl) startSent.inputEl.focus();
+                if (startSent.el) startSent.el.scrollIntoView({ block: "center", behavior: "smooth" });
+            }
+        }
         return;
     }
 
     // If currentTime is somehow before point A (e.g. initial seek), adjust
     if (loopPointA !== null && t < effA - 0.5) {
         audio.currentTime = effA;
+        pendingAdvance = false;
+        const startIdx = findSentenceForLoopPointA(effA);
+        if (startIdx >= 0 && startIdx < sentences.length) {
+            setActiveSentence(startIdx);
+            const startSent = sentences[startIdx];
+            if (mode === "dictation" && startSent.inputEl) startSent.inputEl.focus();
+            if (startSent.el) startSent.el.scrollIntoView({ block: "center", behavior: "smooth" });
+        }
         return;
     }
 
@@ -1344,25 +1409,34 @@ audio.addEventListener("timeupdate", () => {
 
             if (nextIdx < sentences.length) {
                 const nextSent = sentences[nextIdx];
-                // Check if playback has entered the next sentence
-                if (nextSent.startTime !== null && t >= nextSent.startTime - 0.05) {
+                // Check if next sentence starts beyond Point B
+                if (loopPointB !== null && nextSent.startTime !== null && nextSent.startTime >= effB) {
+                    // Next sentence is beyond B: wrap to Point A when point B reached or current sentence finished
+                    if (t >= effB || (curSent.endTime !== null && t > curSent.endTime + 0.15)) {
+                        wrapToLoopPointA();
+                    }
+                } else if (nextSent.startTime !== null && t >= nextSent.startTime - 0.05) {
                     pendingAdvance = false;
                     setActiveSentence(nextIdx);
                     if (mode === "dictation") sentences[nextIdx].inputEl.focus();
                 } else if (curSent.endTime !== null && t > curSent.endTime + 1.5) {
-                    // Safety: in case of long pause between sentences, snap to next sentence
-                    pendingAdvance = false;
-                    setActiveSentence(nextIdx);
-                    if (nextSent.startTime !== null && t < nextSent.startTime - 0.5) {
-                        audio.currentTime = Math.max(effA, nextSent.startTime - 0.5);
+                    // Safety: in case of long pause between sentences, snap to next sentence (if within B boundary)
+                    if (loopPointB === null || nextSent.startTime === null || nextSent.startTime < effB) {
+                        pendingAdvance = false;
+                        setActiveSentence(nextIdx);
+                        if (nextSent.startTime !== null && t < nextSent.startTime - 0.5) {
+                            audio.currentTime = Math.max(effA, nextSent.startTime - 0.5);
+                        }
+                        if (mode === "dictation") sentences[nextIdx].inputEl.focus();
+                    } else {
+                        wrapToLoopPointA();
                     }
-                    if (mode === "dictation") sentences[nextIdx].inputEl.focus();
                 }
             } else {
-                // At the last sentence, loop it
+                // At the last sentence, wrap around to Point A
                 pendingAdvance = false;
                 if (curSent.endTime !== null && t > curSent.endTime + 0.15) {
-                    audio.currentTime = Math.max(effA, curSent.startTime);
+                    wrapToLoopPointA();
                 }
             }
 
@@ -1379,8 +1453,7 @@ audio.addEventListener("timeupdate", () => {
 audio.addEventListener("ended", () => {
     const effA = loopPointA !== null ? loopPointA : 0;
     if (loopPointA !== null || loopPointB !== null) {
-        audio.currentTime = effA;
-        audio.play();
+        wrapToLoopPointA();
         return;
     }
     if (repeatEnabled && activeSentenceIdx >= 0) {
@@ -1501,23 +1574,31 @@ function readABFromInputs() {
 }
 
 // Attach input change listeners to A-B boxes
-[ab_a_m, ab_a_s, ab_a_ms, ab_b_m, ab_b_s, ab_b_ms].forEach(input => {
+[ab_a_m, ab_a_s, ab_a_ms, ab_b_m, ab_b_s, ab_b_ms].forEach(input => { 
     input.addEventListener("input", readABFromInputs);
     input.addEventListener("change", readABFromInputs);
 });
 
-// Set A button: start of current sentence (-0.1s offset)
+// Set A button: start of current sentence (-50% pause interval)
 setABtn.onclick = () => {
     let targetSentence = null;
+    let prevSentence = null;
     if (activeSentenceIdx >= 0 && activeSentenceIdx < sentences.length) {
         targetSentence = sentences[activeSentenceIdx];
+        prevSentence = sentences[activeSentenceIdx - 1] ?? null;
     } else {
         const sIdx = findSentenceAtTime(audio.currentTime);
         if (sIdx >= 0) targetSentence = sentences[sIdx];
+        prevSentence = sentences[sIdx - 1] ?? null;
     }
 
     if (targetSentence && targetSentence.startTime !== null) {
-        loopPointA = Math.max(0, targetSentence.startTime - 0.1);
+    	if (prevSentence !== null) {
+	    	offset = Math.max((targetSentence.startTime - prevSentence.endTime) * 0.5, 0.1);
+	    } else {
+	    	offset = Math.max(targetSentence.startTime * 0.5, 0.1);
+	    }
+        loopPointA = Math.max(0, targetSentence.startTime - offset);
     } else {
         loopPointA = Math.max(0, audio.currentTime - 0.1);
     }
@@ -1530,20 +1611,29 @@ setABtn.onclick = () => {
     updateABInputs();
 };
 
-// Set B button: end of current sentence (+0.1s offset)
+// Set B button: end of current sentence (50% pause interval offset)
 setBBtn.onclick = () => {
     let targetSentence = null;
+    let nextSentence = null;
+    let offset = 0;
     if (activeSentenceIdx >= 0 && activeSentenceIdx < sentences.length) {
         targetSentence = sentences[activeSentenceIdx];
+        nextSentence = sentences[activeSentenceIdx + 1] ?? null;
     } else {
         const sIdx = findSentenceAtTime(audio.currentTime);
         if (sIdx >= 0) targetSentence = sentences[sIdx];
+        nextSentence = sentences[sIdx + 1] ?? null;
     }
 
     if (targetSentence && targetSentence.endTime !== null) {
-        loopPointB = targetSentence.endTime + 0.1;
+    	if (nextSentence !== null) {
+	    	offset = Math.max((nextSentence.startTime - targetSentence.endTime) * 0.5, 0.1);
+	    } else {
+	    	offset = Math.max((audio.duration - targetSentence.endTime) * 0.5, 0.1);
+	    }
+        loopPointB = Math.min(targetSentence.endTime + offset, audio.duration);
     } else {
-        loopPointB = audio.currentTime + 0.1;
+        loopPointB = Math.min(audio.currentTime + 0.1, audio.duration);
     }
 
     // Auto-adjust A if needed
@@ -1564,11 +1654,13 @@ clearBBtn.onclick = () => {
     updateABInputs();
 };
 
-clearAllABBtn.onclick = () => {
+function resetABLoop() {
     loopPointA = null;
     loopPointB = null;
     updateABInputs();
-};
+}
+
+clearAllABBtn.onclick = resetABLoop;
 
 /* ═══════════════════════════════════════════════════════
    Mobile Action Bar & Floating Button
@@ -1598,7 +1690,9 @@ mobPrevBtn.onclick = () => {
 // Mobile Next Jump button
 mobNextJumpBtn.onclick = () => {
     let target = (activeSentenceIdx >= 0 ? activeSentenceIdx : 0) + 1;
-    target = Math.min(sentences.length - 1, target);
+    if (!repeatEnabled) {
+        target = Math.min(sentences.length - 1, target);
+    }
     jumpToSentence(target);
 };
 
@@ -1632,7 +1726,11 @@ window.addEventListener("keydown", e => {
         const dir    = e.key === "ArrowUp" ? -1 : 1;
         let   target = (activeSentenceIdx >= 0
                             ? activeSentenceIdx : 0) + dir;
-        target = Math.max(0, Math.min(sentences.length - 1, target));
+        if (dir < 0 || !repeatEnabled) {
+            target = Math.max(0, Math.min(sentences.length - 1, target));
+        } else {
+            target = Math.max(0, target);
+        }
         jumpToSentence(target);
         return;
     }
